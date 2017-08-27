@@ -6,37 +6,15 @@ Vue.use(Vuex)
 
 export const store = new Vuex.Store({
   state: {
-    loadedMeetups: [
-      {
-        imageUrl: 'http://www.osteriadelchianti.com/wp-content/uploads/2015/10/nairobi.jpg',
-        id: 'vx411',
-        title: 'Meet-up in Nairobi',
-        date: new Date(),
-        location: 'Nairobi, Kenya',
-        description: 'A newly released prison gangster is forced by the leaders of his gang to orchestrate a major crime with a brutal rival gang on the streets of Southern California.'
-      },
-      {
-        imageUrl: 'https://media.timeout.com/images/103531855/image.jpg',
-        id: 'vx412',
-        title: 'Meet-up in New York',
-        date: new Date(),
-        location: 'New York, USA',
-        description: 'A newly released prison gangster is forced by the leaders of his gang to orchestrate a major crime with a brutal rival gang on the streets of Southern California.'
-      },
-      {
-        imageUrl: 'https://www.hftp.org/hitec/amsterdam/i/SITE_160726_12581186_BQK12/content/CMS_07262016_131614000_L33KL/680137FB-0B39-584A-4AEF675BE3B3A60F.JPG',
-        id: 'vx413',
-        title: 'Meet-up in Amsterdam',
-        date: new Date(),
-        location: 'Amsterdam, Netherlands',
-        description: 'A newly released prison gangster is forced by the leaders of his gang to orchestrate a major crime with a brutal rival gang on the streets of Southern California.'
-      }
-    ],
+    loadedMeetups: [],
     user: null,
     loading: false,
     error: null
   },
   mutations: {
+    setLoadedMeetups (state, payload) {
+      state.loadedMeetups = payload
+    },
     createMeetup (state, payload) {
       state.loadedMeetups.push(payload)
     },
@@ -54,17 +32,48 @@ export const store = new Vuex.Store({
     }
   },
   actions: {
+    loadMeetups ({commit}) {
+      commit('setLoading', true)
+      firebase.database().ref('meetups').once('value')
+        .then((data) => {
+          const meetups = []
+          const obj = data.val()
+          for (let key in obj) {
+            meetups.push({
+              id: key,
+              title: obj[key].title,
+              description: obj[key].description,
+              imageUrl: obj[key].imageUrl,
+              date: obj[key].date
+            })
+          }
+          commit('setLoadedMeetups', meetups)
+          commit('setLoading', false)
+        })
+        .catch((error) => {
+          console.log(error)
+          commit('setLoading', false)
+        })
+    },
     createMeetup ({commit}, payload) {
       const meetup = {
         title: payload.title,
         location: payload.location,
         imageUrl: payload.imageUrl,
         description: payload.description,
-        date: payload.date,
-        id: payload.id
+        date: payload.date.toISOString()
       }
-      // Connect to firebase and store it
-      commit('createMeetup', meetup)
+      firebase.database().ref('meetups').push(meetup)
+        .then((data) => {
+          const key = data.key
+          commit('createMeetup', {
+            ...meetup,
+            id: key
+          })
+        })
+        .catch((error) => {
+          console.log(error)
+        })
     },
     signUserUp ({commit}, payload) {
       commit('setLoading', true)

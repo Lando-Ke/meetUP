@@ -123,8 +123,7 @@
           location: this.location,
           imageUrl: this.imageUrl,
           description: this.description,
-          date: this.submittableDateTime,
-          id: '1278'
+          date: this.submittableDateTime
         }
         this.$store.dispatch('createMeetup', meetupData)
         this.$router.push('/meetups')
